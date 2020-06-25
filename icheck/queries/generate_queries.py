@@ -17,9 +17,9 @@ def gen(votes, pols, fname):
 	out.close()
 
 def main():
-	output = "out/icheck.sql"
-	dates = "../data/votes_large.csv"
-	pols = "../data/pols_large.csv"
+	output = "out/icheck_small.sql"
+	dates = "../data/votes_small.csv"
+	pols = "../data/pols_small.csv"
 	gen(dates, pols, output)
 
 if __name__ == '__main__':
