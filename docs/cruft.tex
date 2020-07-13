@@ -1,0 +1,90 @@
+\if{0}
+\clearpage
+\section*{iCheck Example}
+
+\section{Intro}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=\columnwidth]{figs/ichecklana.png}
+    \label{f:icheck}
+\end{figure}
+
+
+\section{Definitions}
+\begin{itemize}
+  \item The database $D = \{R_1,\ldots,R_n\}$ contains relations.
+  \item Schema for relation $R$: $schema(R) = [a^R_1, \ldots]$
+  \item Attributes have a name $a^R_i.name$ and a type $a^R_i.type\in\{num,str,date,\ldots\}$: 
+  \item A query $q$ is {\it valid} if it can be parsed and executed on database $D$.
+  \item A template $t(p_1,\ldots,p_k) \to q$, a SQL query where $k$ nodes in the query AST are explicitly marked as variable/parameters.   
+    The $i^{th}$ node is replaced with $p_i$.
+  \item $P = [p_1,\ldots, p_k]$ is the current parameterization of a template $t$.  It consists of $k$ subtrees.
+    Thus,  $t(P)$ returns a parsable query\footnote{We also assume the query is valid}.  
+  \item A view $v$, a visual component that renders the outputs of a SQL query as visual attributes.  
+  \item An interaction $i$, a pre-defined mechanism where user input with a view that alters the data rendered by that or another view.
+    Intuitively, it will translate user input into a subtree that replaces a subtree in a parameterization $P$.
+ \end{itemize}
+
+A view $V = (t, P, r)$ is defined by a template $t$, its initial parameterization $P$, and a rendering function $r$.  
+The rendering function $r(t(P))$ takes as input the result of $t(P)$ and outputs a rendered object (HTML/CSS, SVG, WebGL, etc). $r()$ needs to provide an inverse function $r^{-1}$ so that objects in the rendered visualization can be translated back into records in $t(P)$.  Let $marks$ be objects in the visualization, then we expect $v.r^{-1}(marks)\subseteq v.t(v.P)$.    $r()$ can take two forms:
+\begin{itemize}
+  \item \stitle{Explicit}  A mark type $m$ and a list of visual mappings from attributes in $t(P)$ to visual attributes of the mark (e.g., x, y, size, color, shape).  This mapping is invertible, so it is possible to automatically translate user interactions back into data that will generate subtrees.  It also naturally maps to vega-lite/d3.
+  \item \stitle{Black Box} An arbitrary function.  The inverse function must be explicitly provided.
+\end{itemize}
+
+\noindent Each view has a unique ID.
+
+\begin{example}[Defining V1 and V3]
+
+  Instead of annotating a query AST with variable nodes, we use curley braces (\texttt{\{expr | name\}}) to denote subtrees that can be replaced. 
+  \texttt{expr} is the default expression, and \texttt{name} is the parameter name of the subtree.
+
+\begin{lstlisting}
+
+
+// V1
+v1_sql = 'select count (vote.vote_id) as vote_cnt, person.name, person.id 
+		from vote, person, gvote, pvote 
+		where person.group=initgroup and pvote.vote_id=vote.vote_id 
+		and gvote.vote_id=vote.vote_id and pvote.vote = gvote.vote 
+        and vote.date between {"2014-01-01" | p1} and {"2015-12-31" | p2}
+		group by person.id'
+v1_P    = {p1, p2}
+v1_r = Encoding("bar", xpos="person.id", ypos="vote_cnt"))
+v1 = v1_r(v1_sql)
+\end{lstlisting}
+
+\dots
+
+\begin{lstlisting}
+// V2
+v2_sql = 'select date.date, count (vote.vote_id) as vote_cnt
+		from date, vote 
+		group by date.date'
+v2_r = Encoding("bar", xpos="date.date", ypos="day_cnt")
+v2_P   = {}
+v2 = v2_r(v2_sql)
+\end{lstlisting}
+\end{example}
+
+
+An interation $I = (a, v_s, v_d)$ is defined by a user action $a$ in the source view $v_s$ that modifies the parameterization of the destination view $v_d$.  A user action $a = (marks, action)$ is characterized by a selection of a subset of $marks$ in $v_s$, possibly along with some action over the selection (e.g., hover, select, click).  The view's rendering function $r()$ can be inverted to translate the selected $marks$ back into records:
+%
+$$v_s.r^{-1}(marks) \subseteq v_s.t(v_s.P)$$
+%
+The interaction uses this information to generate subtrees used to replace one or more of the subtrees in the destination view's parameterization $v_d.P$.
+For convenience, there can be a library of actions such as 1-D horizontal brush, lasso, single selection.  In fact, Vega-lite already provides some sensible default selections to choose from.  
+
+One user action can update multiple views by defining multiple interactions.  Currently, one interaction can be viewed as a directed edge from the source to destination view.  
+
+%Interactions are given a type such as a 1-D horizontal brush, lasso, single selection. Additionally, interactions specify a source view and a target view. The source view is the view that the user interacts with to produce a response. It is linked to an environment where variables may be defined in relation to the output attributes of the source view's initial query or some function over those attributes. The target view is the view that is visually updated by the interaction which may be the same as the source view.
+
+% The target view provides a template which is a SQL query in which curly braces (\{\}) are used to denote at least one variable subtree. Curly braces are placed around the most specific variable syntactic structures. The template may use variables defined in the environment linked to the source view. (Theoretically, variables should not be defined from the source view unless they are used in the target view but we enforce nothing.) Templates should encapsulate all possible query trees that can be produced by the interaction.
+
+
+
+\subsection{Optimization}
+\fi
+
+
